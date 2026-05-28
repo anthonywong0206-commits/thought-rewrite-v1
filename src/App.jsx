@@ -697,10 +697,27 @@ export default function App() {
         </div>
       )}
 
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-lg rounded-full px-5 py-3 flex gap-5 shadow-lg z-40 text-sm">
-        <button onClick={() => setTab("home")}>INPUT</button>
-        <button onClick={() => receipt && setTab("receipt")}>RECEIPT</button>
-        <button onClick={() => receipt && setTab("card")}>CARD</button>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92vw] max-w-md bg-white/95 backdrop-blur-xl rounded-[2rem] px-4 py-4 flex justify-around items-center shadow-2xl border border-black/10 z-40 text-base font-black tracking-[0.12em]">
+        <button
+          onClick={() => setTab("home")}
+          className={`min-w-[86px] py-3 rounded-2xl active:scale-95 transition ${tab === "home" ? "bg-black text-white" : "text-black"}`}
+        >
+          INPUT
+        </button>
+
+        <button
+          onClick={() => receipt && setTab("receipt")}
+          className={`min-w-[100px] py-3 rounded-2xl active:scale-95 transition ${tab === "receipt" ? "bg-black text-white" : "text-black"} ${!receipt ? "opacity-40" : ""}`}
+        >
+          RECEIPT
+        </button>
+
+        <button
+          onClick={() => receipt && setTab("card")}
+          className={`min-w-[86px] py-3 rounded-2xl active:scale-95 transition ${tab === "card" ? "bg-black text-white" : "text-black"} ${!receipt ? "opacity-40" : ""}`}
+        >
+          CARD
+        </button>
       </div>
     </div>
   );
