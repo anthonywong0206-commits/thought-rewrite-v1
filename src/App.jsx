@@ -2,6 +2,8 @@
 import { useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 
+const LOGO_URL = "/logo.png";
+
 const allowedDistortionNames = [
   "災難化",
   "非黑即白",
@@ -743,8 +745,12 @@ export default function App() {
           <div className="receipt p-6 md:p-8">
             <div className="receipt-paper rounded-[2rem] p-7">
               <div className="text-center border-b border-dashed border-gray-300 pb-6">
-                <div className="mx-auto w-14 h-8 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs bg-white">
-                  ◌
+                <div className="mx-auto mb-4 flex justify-center">
+                  <img
+                    src={LOGO_URL}
+                    alt="Thought Rewrite Logo"
+                    className="w-24 h-24 object-contain drop-shadow-lg"
+                  />
                 </div>
                 <h1 className="text-4xl md:text-5xl font-black tracking-wide">
                   THOUGHT REWRITE
@@ -793,8 +799,12 @@ export default function App() {
         <div className="max-w-xl mx-auto pt-7 fade-up relative">
           <div className="receipt-paper rounded-[2rem] p-7">
             <div className="text-center border-b border-dashed border-gray-300 pb-6">
-              <div className="mx-auto w-14 h-8 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs bg-white">
-                ✓
+              <div className="mx-auto mb-4 flex justify-center">
+                <img
+                  src={LOGO_URL}
+                  alt="Thought Rewrite Logo"
+                  className="w-20 h-20 object-contain drop-shadow-md"
+                />
               </div>
               <h2 className="text-4xl font-black">思維重整收據</h2>
               <p className="mt-2 text-xs tracking-[0.28em] text-gray-500">
@@ -939,8 +949,12 @@ export default function App() {
 
                 <div className="receipt-paper rounded-[24px] px-[18px] py-[18px] flex-1 overflow-hidden box-border">
                   <div className="text-center border-b border-dashed border-gray-300 pb-[12px]">
-                    <div className="mx-auto w-[46px] h-[26px] rounded-lg border border-gray-300 mb-[10px] flex items-center justify-center text-xs bg-white">
-                      ✓
+                    <div className="mx-auto mb-[10px] flex justify-center">
+                      <img
+                        src={LOGO_URL}
+                        alt="Thought Rewrite Logo"
+                        className="w-[64px] h-[64px] object-contain"
+                      />
                     </div>
 
                     <div className="flex justify-between text-[9px] text-gray-400">
@@ -1066,8 +1080,12 @@ export default function App() {
           <div ref={cardRef} className="bg-[#f7efe5] p-3 rounded-[2rem]">
             <div className="mx-auto max-w-xl bg-[#fffdf8] rounded-[2rem] shadow-2xl border border-black/10 overflow-hidden">
               <div className="p-6 text-center border-b border-dashed border-gray-300">
-                <div className="mx-auto w-12 h-7 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs">
-                  ◌
+                <div className="mx-auto mb-4 flex justify-center">
+                  <img
+                    src={LOGO_URL}
+                    alt="Thought Rewrite Logo"
+                    className="w-16 h-16 object-contain"
+                  />
                 </div>
                 <h3 className="text-3xl font-black">轉念小卡</h3>
                 <p className="text-xs tracking-[0.28em] text-gray-500 mt-2">
