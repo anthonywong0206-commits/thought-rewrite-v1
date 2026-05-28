@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 
@@ -13,12 +14,23 @@ const systemPrompt = `
 }
 `;
 
+const distortionInfo = {
+  "災難化": "傾向把事情想像成最壞結果，好像問題會全面失控。",
+  "非黑即白": "把事情看成只有成功或失敗，缺乏中間可能性。",
+  "過度概括": "因一次經驗，就推論所有情況都會一樣。",
+  "情緒化推理": "因為自己感到糟糕，就認定事情一定很糟。",
+  "否定正面經驗": "忽略自己做得到或曾經成功的部分。",
+  "讀心術": "假設別人一定在負面評價自己。",
+  "應該化": "對自己或他人有過高的『應該』要求。"
+};
+
 export default function App() {
   const [thought, setThought] = useState("");
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState("home");
+  const [selectedDistortion, setSelectedDistortion] = useState(null);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("receipts") || "[]");
@@ -85,7 +97,7 @@ export default function App() {
   }));
 
   return (
-    <div className="min-h-screen p-4 pb-24">
+    <div className="min-h-screen p-4 pb-24 bg-[#f5f2ec]">
       {tab === "home" && (
         <div className="max-w-xl mx-auto pt-10 fade-up">
           <div className="receipt p-8">
@@ -121,7 +133,7 @@ export default function App() {
 
       {tab === "receipt" && receipt && (
         <div className="max-w-xl mx-auto pt-8 fade-up">
-          <div className="receipt p-8">
+          <div className="receipt p-8 relative">
             <h2 className="text-5xl font-black text-center">RECEIPT</h2>
 
             <div className="mt-10 space-y-10">
@@ -148,12 +160,13 @@ export default function App() {
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   {receipt.distortion?.map((d, i) => (
-                    <span
+                    <button
                       key={i}
-                      className="px-3 py-1 rounded-full border text-sm"
+                      onClick={() => setSelectedDistortion(d)}
+                      className="px-3 py-1 rounded-full border text-sm hover:bg-black hover:text-white transition"
                     >
                       {d}
-                    </span>
+                    </button>
                   ))}
                 </div>
 
@@ -216,6 +229,27 @@ export default function App() {
                 <Line type="monotone" dataKey="value" stroke="#111" />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {selectedDistortion && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-2xl font-bold mb-4">
+              {selectedDistortion}
+            </h3>
+
+            <p className="text-gray-600 leading-loose">
+              {distortionInfo[selectedDistortion] || "這是一種常見的非理性思維模式。"}
+            </p>
+
+            <button
+              onClick={() => setSelectedDistortion(null)}
+              className="mt-6 w-full bg-black text-white py-3 rounded-2xl"
+            >
+              關閉
+            </button>
           </div>
         </div>
       )}
