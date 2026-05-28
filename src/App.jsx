@@ -245,6 +245,8 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [selectedDistortion, setSelectedDistortion] = useState(null);
   const [favorite, setFavorite] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [printerStage, setPrinterStage] = useState("idle");
   const cardRef = useRef(null);
   const receiptStoryRef = useRef(null);
@@ -304,6 +306,7 @@ export default function App() {
 
       setReceipt(normalized);
       setFavorite(false);
+      setReceiptPreview(null);
 
       setTimeout(() => {
         setPrinterStage("done");
@@ -395,52 +398,84 @@ export default function App() {
   const makeReceiptStoryCanvas = async () => {
     if (!receiptStoryRef.current) return null;
 
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
     return await html2canvas(receiptStoryRef.current, {
       backgroundColor: "#f7efe5",
       scale: 2,
-      width: receiptStoryRef.current.offsetWidth,
-      height: receiptStoryRef.current.offsetHeight,
+      width: 390,
+      height: 693,
+      windowWidth: 390,
+      windowHeight: 693,
+      scrollX: 0,
+      scrollY: 0,
       useCORS: true
     });
   };
 
+  const generateReceiptPreview = async () => {
+    setPreviewLoading(true);
+
+    try {
+      const canvas = await makeReceiptStoryCanvas();
+      if (!canvas) return;
+
+      const dataUrl = canvas.toDataURL("image/png");
+      setReceiptPreview(dataUrl);
+    } catch (error) {
+      console.error(error);
+      alert("生成預覽失敗，請再試一次。");
+    }
+
+    setPreviewLoading(false);
+  };
+
   const downloadReceiptStory = async () => {
-    const canvas = await makeReceiptStoryCanvas();
-    if (!canvas) return;
+    let dataUrl = receiptPreview;
+
+    if (!dataUrl) {
+      const canvas = await makeReceiptStoryCanvas();
+      if (!canvas) return;
+      dataUrl = canvas.toDataURL("image/png");
+      setReceiptPreview(dataUrl);
+    }
 
     const link = document.createElement("a");
     link.download = `thought-rewrite-receipt-story-${Date.now()}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.href = dataUrl;
     link.click();
   };
 
   const shareReceiptStory = async () => {
-    const canvas = await makeReceiptStoryCanvas();
-    if (!canvas) return;
+    let dataUrl = receiptPreview;
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    if (!dataUrl) {
+      const canvas = await makeReceiptStoryCanvas();
+      if (!canvas) return;
+      dataUrl = canvas.toDataURL("image/png");
+      setReceiptPreview(dataUrl);
+    }
 
-      const file = new File([blob], "thought-rewrite-receipt-story.png", {
-        type: "image/png"
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], "thought-rewrite-receipt-story.png", {
+      type: "image/png"
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "Thought Rewrite Receipt",
+        text: "我的思維重整收據",
+        files: [file]
       });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: "Thought Rewrite Receipt",
-          text: "我的思維重整收據",
-          files: [file]
-        });
-      } else if (navigator.share) {
-        await navigator.share({
-          title: "Thought Rewrite Receipt",
-          text: receipt?.reframe || "我的思維重整收據"
-        });
-      } else {
-        alert("此瀏覽器未支援直接分享，已改為下載圖片。");
-        downloadReceiptStory();
-      }
-    }, "image/png");
+    } else if (navigator.share) {
+      await navigator.share({
+        title: "Thought Rewrite Receipt",
+        text: receipt?.reframe || "我的思維重整收據"
+      });
+    } else {
+      alert("此瀏覽器未支援直接分享，已改為下載圖片。");
+      downloadReceiptStory();
+    }
   };
 
   return (
@@ -861,137 +896,163 @@ export default function App() {
           <div className="text-center mb-5">
             <h2 className="text-4xl font-black tracking-wide">保留收據</h2>
             <p className="text-sm text-gray-500 mt-2 tracking-[0.2em]">
-              IG STORY RECEIPT｜1080 × 1920
+              先產生預覽，再下載或分享
             </p>
           </div>
 
-          <div
-            ref={receiptStoryRef}
-            className="mx-auto w-full max-w-[390px] aspect-[9/16] bg-[#f7efe5] rounded-[2rem] overflow-hidden shadow-2xl border border-black/10 relative"
-          >
-            <div className="absolute inset-0 soft-grid"></div>
-
-            <div className="relative h-full p-5 flex flex-col">
-              <div className="text-center mb-4">
-                <div className="inline-flex items-center gap-2 bg-white/80 border border-black/10 rounded-full px-4 py-2 text-[10px] font-black tracking-[0.18em] text-[#8a6248] shadow-sm">
-                  ✦ THOUGHT REWRITE
-                </div>
-
-                <h3 className="text-3xl font-black mt-4">思維重整收據</h3>
-                <p className="text-[10px] tracking-[0.28em] text-gray-500 mt-2">
-                  THOUGHT REWRITE RECEIPT
+          <div className="rounded-[2rem] bg-white/80 border border-black/10 shadow-2xl p-4">
+            {!receiptPreview ? (
+              <div className="aspect-[9/16] rounded-[1.7rem] bg-[#f7efe5] border border-dashed border-[#c8b5a1] flex flex-col items-center justify-center text-center p-8">
+                <div className="printer-wrap scale-[0.68] -my-10"></div>
+                <h3 className="text-2xl font-black mt-2">準備生成收據圖</h3>
+                <p className="text-gray-500 text-sm mt-3 leading-loose">
+                  系統會先生成一張 IG Story 比例的收據圖片，確認完整後再下載或分享。
                 </p>
               </div>
+            ) : (
+              <img
+                src={receiptPreview}
+                alt="思維重整收據預覽"
+                className="w-full aspect-[9/16] object-contain rounded-[1.7rem] bg-[#f7efe5] border border-black/10"
+              />
+            )}
+          </div>
 
-              <div className="receipt-paper rounded-[1.7rem] p-5 flex-1 overflow-hidden">
-                <div className="text-center border-b border-dashed border-gray-300 pb-4">
-                  <div className="mx-auto w-12 h-7 rounded-lg border border-gray-300 mb-3 flex items-center justify-center text-xs bg-white">
-                    ✓
+          <div className="fixed -left-[9999px] top-0 w-[390px] h-[693px] overflow-hidden pointer-events-none">
+            <div
+              ref={receiptStoryRef}
+              className="w-[390px] h-[693px] bg-[#f7efe5] overflow-hidden relative"
+            >
+              <div className="absolute inset-0 soft-grid"></div>
+
+              <div className="relative h-full p-[20px] flex flex-col box-border">
+                <div className="text-center mb-[14px] shrink-0">
+                  <div className="inline-flex items-center gap-2 bg-white/80 border border-black/10 rounded-full px-4 py-2 text-[10px] font-black tracking-[0.18em] text-[#8a6248] shadow-sm">
+                    ✦ THOUGHT REWRITE
                   </div>
 
-                  <div className="flex justify-between text-[10px] text-gray-400">
-                    <span>NO. {String(receipt.id || Date.now()).slice(-10)}</span>
-                    <span>{receipt.date}</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-4">
-                  <section>
-                    <p className="text-[10px] font-black tracking-[0.18em] text-[#9b7b63]">
-                      01｜INPUT
-                    </p>
-                    <p className="mt-2 text-lg leading-relaxed break-words">
-                      “{shorten(receipt.input, 48)}”
-                    </p>
-                  </section>
-
-                  <div className="border-t border-dashed border-gray-300"></div>
-
-                  <section>
-                    <p className="text-[10px] font-black tracking-[0.18em] text-[#9b7b63]">
-                      02｜EMOTION
-                    </p>
-
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {(receipt.emotion?.length ? receipt.emotion : ["未有情緒標籤"]).slice(0, 4).map((e, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 rounded-full bg-[#f5eee5] text-[11px] font-bold border border-black/5"
-                        >
-                          {e}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section>
-                    <p className="text-[10px] font-black tracking-[0.18em] text-[#9b7b63]">
-                      03｜THINKING PATTERN
-                    </p>
-
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {currentDistortions.slice(0, 3).map((d, i) => (
-                        <span
-                          key={`${d.name}-${i}`}
-                          className="px-3 py-1 rounded-full bg-white text-[11px] font-bold border border-black/10"
-                        >
-                          {standardizeDistortionName(d.name)}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="rounded-3xl bg-[#eef3e9] p-4 border border-black/5">
-                    <p className="text-[10px] font-black tracking-[0.18em] text-[#6c8e56]">
-                      REFRAME
-                    </p>
-                    <p className="mt-2 text-sm leading-loose break-words">
-                      {shorten(receipt.reframe, 92)}
-                    </p>
-                  </section>
-
-                  <section className="rounded-3xl bg-[#fff7df] p-4 border border-black/5">
-                    <p className="text-[10px] font-black tracking-[0.18em] text-[#9a7944]">
-                      ACTION
-                    </p>
-                    <p className="mt-2 text-sm leading-loose break-words">
-                      {shorten(receipt.action, 70)}
-                    </p>
-                  </section>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
-                  <div className="h-9 bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
-                  <p className="text-center text-[10px] tracking-[0.22em] text-gray-400 mt-3">
-                    理解自己，就是改變的開始
+                  <h3 className="text-[30px] leading-tight font-black mt-[14px]">思維重整收據</h3>
+                  <p className="text-[10px] tracking-[0.28em] text-gray-500 mt-[6px]">
+                    THOUGHT REWRITE RECEIPT
                   </p>
                 </div>
-              </div>
 
-              <div className="mt-4 text-center">
-                <p className="text-[10px] tracking-[0.25em] text-[#9b7b63] font-black">
-                  KEEP THIS RECEIPT FOR YOURSELF
-                </p>
+                <div className="receipt-paper rounded-[24px] px-[18px] py-[18px] flex-1 overflow-hidden box-border">
+                  <div className="text-center border-b border-dashed border-gray-300 pb-[12px]">
+                    <div className="mx-auto w-[46px] h-[26px] rounded-lg border border-gray-300 mb-[10px] flex items-center justify-center text-xs bg-white">
+                      ✓
+                    </div>
+
+                    <div className="flex justify-between text-[9px] text-gray-400">
+                      <span>NO. {String(receipt.id || Date.now()).slice(-10)}</span>
+                      <span>{receipt.date}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-[12px] space-y-[11px]">
+                    <section>
+                      <p className="text-[9px] font-black tracking-[0.16em] text-[#9b7b63]">
+                        01｜INPUT
+                      </p>
+                      <p className="mt-[6px] text-[17px] leading-[1.55] break-words">
+                        “{shorten(receipt.input, 42)}”
+                      </p>
+                    </section>
+
+                    <div className="border-t border-dashed border-gray-300"></div>
+
+                    <section>
+                      <p className="text-[9px] font-black tracking-[0.16em] text-[#9b7b63]">
+                        02｜EMOTION
+                      </p>
+
+                      <div className="mt-[7px] flex flex-wrap gap-[6px]">
+                        {(receipt.emotion?.length ? receipt.emotion : ["未有情緒標籤"]).slice(0, 4).map((e, i) => (
+                          <span
+                            key={i}
+                            className="px-[10px] py-[4px] rounded-full bg-[#f5eee5] text-[10px] font-bold border border-black/5"
+                          >
+                            {e}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section>
+                      <p className="text-[9px] font-black tracking-[0.16em] text-[#9b7b63]">
+                        03｜THINKING PATTERN
+                      </p>
+
+                      <div className="mt-[7px] flex flex-wrap gap-[6px]">
+                        {currentDistortions.slice(0, 3).map((d, i) => (
+                          <span
+                            key={`${d.name}-${i}`}
+                            className="px-[10px] py-[4px] rounded-full bg-white text-[10px] font-bold border border-black/10"
+                          >
+                            {standardizeDistortionName(d.name)}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="rounded-[22px] bg-[#eef3e9] p-[13px] border border-black/5">
+                      <p className="text-[9px] font-black tracking-[0.16em] text-[#6c8e56]">
+                        REFRAME
+                      </p>
+                      <p className="mt-[6px] text-[13px] leading-[1.75] break-words">
+                        {shorten(receipt.reframe, 78)}
+                      </p>
+                    </section>
+
+                    <section className="rounded-[22px] bg-[#fff7df] p-[13px] border border-black/5">
+                      <p className="text-[9px] font-black tracking-[0.16em] text-[#9a7944]">
+                        ACTION
+                      </p>
+                      <p className="mt-[6px] text-[13px] leading-[1.75] break-words">
+                        {shorten(receipt.action, 58)}
+                      </p>
+                    </section>
+                  </div>
+
+                  <div className="mt-[12px] pt-[10px] border-t border-dashed border-gray-300">
+                    <div className="h-[30px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
+                    <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[9px]">
+                      理解自己，就是改變的開始
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-[12px] text-center shrink-0">
+                  <p className="text-[9px] tracking-[0.22em] text-[#9b7b63] font-black">
+                    KEEP THIS RECEIPT FOR YOURSELF
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="sticky bottom-28 mt-5 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-black/10 overflow-hidden">
-            <div className="grid grid-cols-3 divide-x divide-gray-200 text-sm font-bold">
+            <div className="grid grid-cols-4 divide-x divide-gray-200 text-sm font-bold">
+              <button
+                onClick={generateReceiptPreview}
+                disabled={previewLoading}
+                className="py-4 active:bg-gray-100 disabled:opacity-50"
+              >
+                ◎<br />{previewLoading ? "生成中" : "產生預覽"}
+              </button>
               <button onClick={downloadReceiptStory} className="py-4 active:bg-gray-100">
-                ↓<br />下載收據圖
+                ↓<br />下載
               </button>
               <button onClick={shareReceiptStory} className="py-4 active:bg-gray-100">
                 ⤴<br />分享
               </button>
               <button onClick={() => setTab("receipt")} className="py-4 active:bg-gray-100">
-                ←<br />返回收據
+                ←<br />返回
               </button>
             </div>
           </div>
         </div>
       )}
-
 
       {tab === "card" && receipt && (
         <div className="max-w-2xl mx-auto pt-6 fade-up relative">
