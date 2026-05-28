@@ -184,6 +184,60 @@ function shorten(text, max = 52) {
   return raw.slice(0, max) + "…";
 }
 
+function ReceiptPrinter({ stage = "printing" }) {
+  const progressText =
+    stage === "analyzing" ? "AI 正在分析你的想法…" :
+    stage === "printing" ? "正在打印轉念收據…" :
+    "收據已生成！";
+
+  return (
+    <div className="max-w-md mx-auto pt-12 text-center fade-up">
+      <div className="mb-8">
+        <p className="text-xs tracking-[0.3em] text-[#9b7b63] font-black">THOUGHT REWRITE</p>
+        <h2 className="text-4xl font-black mt-3">思維重整小票機</h2>
+        <p className="text-gray-500 mt-3">把混亂的念頭，印成可以理解的收據。</p>
+      </div>
+
+      <div className="printer-wrap mx-auto">
+        <div className="printer-paper-top">
+          <div className="paper-lines">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div className="printer-body">
+          <div className="printer-face">
+            <div className="printer-eye"></div>
+            <div className="printer-smile"></div>
+            <div className="printer-light"></div>
+          </div>
+          <div className="printer-slot"></div>
+        </div>
+
+        <div className="printed-receipt">
+          <p className="text-[10px] tracking-[0.25em]">RECEIPT</p>
+          <div className="mini-barcode"></div>
+          <p className="text-xs mt-2">{progressText}</p>
+        </div>
+      </div>
+
+      <div className="mt-10 bg-white/80 rounded-3xl p-5 shadow-xl border border-black/5">
+        <div className="h-3 rounded-full bg-[#eadfd3] overflow-hidden">
+          <div className={`h-full bg-[#8fbf6f] rounded-full ${stage === "done" ? "w-full" : "printer-progress"}`}></div>
+        </div>
+        <p className="mt-4 text-sm text-gray-600">{progressText}</p>
+        <div className="mt-3 flex justify-center gap-2">
+          <span className="dot"></span>
+          <span className="dot delay-1"></span>
+          <span className="dot delay-2"></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [thought, setThought] = useState("");
   const [loading, setLoading] = useState(false);
@@ -191,6 +245,7 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [selectedDistortion, setSelectedDistortion] = useState(null);
   const [favorite, setFavorite] = useState(false);
+  const [printerStage, setPrinterStage] = useState("idle");
   const cardRef = useRef(null);
 
   const currentDistortions = useMemo(
@@ -199,9 +254,14 @@ export default function App() {
   );
 
   const generateReceipt = async () => {
-    if (!thought.trim()) return;
+    if (!thought.trim()) {
+      alert("請先輸入你的想法。");
+      return;
+    }
 
     setLoading(true);
+    setPrinterStage("analyzing");
+    setTab("printing");
 
     try {
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -222,12 +282,14 @@ export default function App() {
 
       if (!res.ok) throw new Error("OpenAI API request failed");
 
+      setPrinterStage("printing");
+
       const data = await res.json();
       const parsed = safeJsonParse(data.choices?.[0]?.message?.content || "{}");
       const normalizedDistortions = normalizeDistortions(parsed.distortion);
 
       const normalized = {
-        id: `receipt-${Date.now()}`,
+        id: `TR-${Date.now()}`,
         input: thought,
         emotion: Array.isArray(parsed.emotion) ? parsed.emotion : [],
         distortion: normalizedDistortions.length > 0
@@ -241,13 +303,22 @@ export default function App() {
 
       setReceipt(normalized);
       setFavorite(false);
-      setTab("receipt");
+
+      setTimeout(() => {
+        setPrinterStage("done");
+        setTimeout(() => {
+          setTab("receipt");
+          setLoading(false);
+        }, 700);
+      }, 1700);
+
     } catch (e) {
+      setLoading(false);
+      setPrinterStage("idle");
+      setTab("home");
       alert("OpenAI API Error，請檢查 API Key 或網絡設定。");
       console.error(e);
     }
-
-    setLoading(false);
   };
 
   const openDistortion = (item) => {
@@ -321,141 +392,410 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen p-4 pb-32 bg-[#f5f2ec]">
+    <div className="min-h-screen p-4 pb-32 bg-[#f7efe5] relative overflow-x-hidden">
+      <style>{`
+        body {
+          background: #f7efe5;
+        }
+
+        .receipt {
+          background: #fffdf8;
+          border: 1px solid rgba(70, 45, 30, 0.1);
+          box-shadow: 0 24px 60px rgba(83, 57, 38, 0.14);
+          border-radius: 30px;
+        }
+
+        .receipt-paper {
+          position: relative;
+          background:
+            linear-gradient(#fffdf8, #fffaf2),
+            repeating-linear-gradient(0deg, rgba(0,0,0,0.025) 0px, rgba(0,0,0,0.025) 1px, transparent 1px, transparent 7px);
+          box-shadow: 0 28px 70px rgba(74, 52, 34, 0.16);
+        }
+
+        .receipt-paper::before,
+        .receipt-paper::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          width: 100%;
+          height: 14px;
+          background: radial-gradient(circle at 8px 7px, #f7efe5 7px, transparent 8px) repeat-x;
+          background-size: 16px 14px;
+          pointer-events: none;
+        }
+
+        .receipt-paper::before {
+          top: -1px;
+        }
+
+        .receipt-paper::after {
+          bottom: -1px;
+          transform: rotate(180deg);
+        }
+
+        .fade-up {
+          animation: fadeUp 0.55s ease both;
+        }
+
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .printer-wrap {
+          width: 250px;
+          height: 330px;
+          position: relative;
+        }
+
+        .printer-body {
+          position: absolute;
+          left: 50%;
+          top: 112px;
+          transform: translateX(-50%);
+          width: 230px;
+          height: 155px;
+          border-radius: 36px;
+          background: linear-gradient(180deg, #fffaf2, #e8dac9);
+          box-shadow: 0 30px 60px rgba(80, 56, 35, 0.2), inset 0 -10px 20px rgba(78, 52, 32, 0.08);
+          border: 1px solid rgba(90, 60, 35, 0.12);
+        }
+
+        .printer-face {
+          position: absolute;
+          top: 35px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 72px;
+          height: 46px;
+          border-radius: 24px;
+          background: #1f2a24;
+          box-shadow: inset 0 0 14px rgba(255,255,255,0.14);
+        }
+
+        .printer-eye::before,
+        .printer-eye::after {
+          content: "";
+          position: absolute;
+          top: 17px;
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: #9df486;
+          box-shadow: 0 0 12px #9df486;
+        }
+
+        .printer-eye::before { left: 20px; }
+        .printer-eye::after { right: 20px; }
+
+        .printer-smile {
+          position: absolute;
+          left: 50%;
+          top: 29px;
+          transform: translateX(-50%);
+          width: 20px;
+          height: 8px;
+          border-bottom: 2px solid #9df486;
+          border-radius: 0 0 20px 20px;
+        }
+
+        .printer-light {
+          position: absolute;
+          right: -58px;
+          bottom: -45px;
+          width: 34px;
+          height: 34px;
+          border-radius: 999px;
+          background: #7ac65b;
+          border: 5px solid #ecf4df;
+          box-shadow: 0 0 16px #7ac65b;
+          animation: pulseLight 1.2s ease-in-out infinite;
+        }
+
+        @keyframes pulseLight {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.08); opacity: 0.75; }
+        }
+
+        .printer-slot {
+          position: absolute;
+          left: 50%;
+          bottom: 24px;
+          transform: translateX(-50%);
+          width: 160px;
+          height: 15px;
+          border-radius: 999px;
+          background: #6b4b36;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.25);
+        }
+
+        .printer-paper-top {
+          position: absolute;
+          left: 50%;
+          top: 0;
+          transform: translateX(-50%);
+          width: 135px;
+          height: 120px;
+          background: #fffdf8;
+          border: 1px solid rgba(80, 50, 30, 0.12);
+          box-shadow: 0 12px 30px rgba(75, 53, 37, 0.12);
+          border-radius: 14px 14px 4px 4px;
+          animation: paperWiggle 1.4s ease-in-out infinite;
+        }
+
+        .paper-lines {
+          padding: 28px 18px;
+        }
+
+        .paper-lines span {
+          display: block;
+          height: 7px;
+          background: #d9cdbd;
+          border-radius: 999px;
+          margin-bottom: 12px;
+          animation: lineBlink 1.1s infinite;
+        }
+
+        .paper-lines span:nth-child(2) { width: 76%; animation-delay: 0.15s; }
+        .paper-lines span:nth-child(3) { width: 58%; animation-delay: 0.3s; }
+
+        @keyframes lineBlink {
+          0%,100% { opacity: 0.35; }
+          50% { opacity: 1; }
+        }
+
+        @keyframes paperWiggle {
+          0%,100% { transform: translateX(-50%) rotate(-0.4deg); }
+          50% { transform: translateX(-50%) rotate(0.5deg); }
+        }
+
+        .printed-receipt {
+          position: absolute;
+          left: 50%;
+          top: 245px;
+          transform: translateX(-50%);
+          width: 150px;
+          min-height: 110px;
+          background: #fffdf8;
+          border-left: 1px solid rgba(80,50,30,0.08);
+          border-right: 1px solid rgba(80,50,30,0.08);
+          box-shadow: 0 20px 35px rgba(70,45,28,0.16);
+          padding: 18px 13px;
+          animation: receiptPrint 2.2s ease-in-out infinite;
+        }
+
+        .printed-receipt::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: -10px;
+          width: 100%;
+          height: 12px;
+          background: radial-gradient(circle at 6px 6px, #f7efe5 6px, transparent 7px) repeat-x;
+          background-size: 12px 12px;
+        }
+
+        @keyframes receiptPrint {
+          0% { height: 52px; transform: translateX(-50%) translateY(-18px); opacity: 0.5; }
+          45% { height: 125px; transform: translateX(-50%) translateY(0); opacity: 1; }
+          100% { height: 125px; transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .mini-barcode {
+          height: 28px;
+          margin-top: 12px;
+          background: repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 5px, #111 5px 7px, transparent 7px 12px);
+        }
+
+        .printer-progress {
+          animation: printerProgress 2.2s ease-in-out infinite;
+        }
+
+        @keyframes printerProgress {
+          0% { width: 8%; }
+          55% { width: 84%; }
+          100% { width: 96%; }
+        }
+
+        .dot {
+          width: 7px;
+          height: 7px;
+          background: #8fbf6f;
+          border-radius: 999px;
+          display: inline-block;
+          animation: dotPulse 1.2s ease-in-out infinite;
+        }
+
+        .delay-1 { animation-delay: 0.18s; }
+        .delay-2 { animation-delay: 0.36s; }
+
+        @keyframes dotPulse {
+          0%, 100% { opacity: 0.3; transform: translateY(0); }
+          50% { opacity: 1; transform: translateY(-4px); }
+        }
+
+        .soft-grid {
+          background-image:
+            radial-gradient(circle at 20% 10%, rgba(143,191,111,0.2), transparent 24%),
+            radial-gradient(circle at 85% 18%, rgba(244,180,140,0.22), transparent 26%),
+            radial-gradient(circle at 50% 92%, rgba(181,151,120,0.18), transparent 28%);
+        }
+      `}</style>
+
+      <div className="absolute inset-0 soft-grid pointer-events-none"></div>
+
       {tab === "home" && (
-        <div className="max-w-xl mx-auto pt-10 fade-up">
-          <div className="receipt p-8">
-            <h1 className="text-5xl font-black tracking-wide">
-              THOUGHT REWRITE
-            </h1>
+        <div className="max-w-xl mx-auto pt-7 fade-up relative">
+          <div className="text-center mb-5">
+            <div className="inline-flex items-center gap-2 bg-white/70 border border-black/10 rounded-full px-4 py-2 text-xs font-black tracking-[0.18em] text-[#8a6248] shadow-sm">
+              ✦ RECEIPT PRINTER MODE
+            </div>
+          </div>
 
-            <p className="mt-4 text-gray-500 leading-relaxed">
-              We help you reframe difficult thoughts,
-              one receipt at a time.
-            </p>
+          <div className="receipt p-6 md:p-8">
+            <div className="receipt-paper rounded-[2rem] p-7">
+              <div className="text-center border-b border-dashed border-gray-300 pb-6">
+                <div className="mx-auto w-14 h-8 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs bg-white">
+                  ◌
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black tracking-wide">
+                  THOUGHT REWRITE
+                </h1>
+                <p className="mt-3 text-sm tracking-[0.2em] text-gray-500">
+                  轉念小票
+                </p>
+                <p className="mt-4 text-gray-500 leading-relaxed">
+                  把混亂的念頭，印成可以理解的收據。
+                </p>
+              </div>
 
-            <div className="mt-10">
-              <p className="font-bold mb-3">你現在的想法</p>
+              <div className="mt-8">
+                <p className="font-black mb-3 tracking-[0.12em]">你的想法是…</p>
 
-              <textarea
-                value={thought}
-                onChange={(e) => setThought(e.target.value)}
-                placeholder="是不是所有事情都失控了..."
-                className="w-full h-52 rounded-2xl border border-gray-300 bg-[#faf8f3] p-5 text-lg"
-              />
+                <textarea
+                  value={thought}
+                  onChange={(e) => setThought(e.target.value)}
+                  placeholder="例如：我覺得自己做得不好，好擔心會失敗..."
+                  maxLength={500}
+                  className="w-full h-52 rounded-3xl border border-black/10 bg-[#fffaf2] p-5 text-lg shadow-inner resize-none"
+                />
 
-              <button
-                onClick={generateReceipt}
-                disabled={loading}
-                className="mt-6 w-full bg-black text-white py-4 rounded-2xl tracking-[0.3em] active:scale-[0.98] transition disabled:opacity-60"
-              >
-                {loading ? "PRINTING..." : "CHECKOUT"}
-              </button>
+                <div className="text-right text-xs text-gray-400 mt-2">
+                  {thought.length}/500
+                </div>
+
+                <button
+                  onClick={generateReceipt}
+                  disabled={loading}
+                  className="mt-5 w-full bg-[#9f6b60] text-white py-4 rounded-3xl tracking-[0.22em] font-black active:scale-[0.98] transition disabled:opacity-60 shadow-xl"
+                >
+                  {loading ? "PRINTING..." : "印出我的收據 →"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {tab === "printing" && (
+        <ReceiptPrinter stage={printerStage === "done" ? "done" : printerStage} />
+      )}
+
       {tab === "receipt" && receipt && (
-        <div className="max-w-xl mx-auto pt-8 fade-up">
-          <div className="receipt p-8 relative">
-            <h2 className="text-5xl font-black text-center">RECEIPT</h2>
+        <div className="max-w-xl mx-auto pt-7 fade-up relative">
+          <div className="receipt-paper rounded-[2rem] p-7">
+            <div className="text-center border-b border-dashed border-gray-300 pb-6">
+              <div className="mx-auto w-14 h-8 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs bg-white">
+                ✓
+              </div>
+              <h2 className="text-4xl font-black">思維重整收據</h2>
+              <p className="mt-2 text-xs tracking-[0.28em] text-gray-500">
+                THOUGHT REWRITE RECEIPT
+              </p>
 
-            <p className="mt-3 text-center text-xs text-gray-400 tracking-[0.3em]">
-              THOUGHT RECEIPT
-            </p>
+              <div className="mt-4 flex justify-between text-xs text-gray-400">
+                <span>NO. {String(receipt.id || Date.now()).slice(-10)}</span>
+                <span>{receipt.date}</span>
+              </div>
+            </div>
 
-            <div className="mt-10 space-y-10">
+            <div className="mt-7 space-y-7">
               <section>
-                <p className="text-sm text-gray-500">01. INPUT</p>
+                <p className="text-xs font-black tracking-[0.2em] text-[#9b7b63]">01｜你的想法 INPUT</p>
                 <p className="mt-3 text-2xl leading-relaxed">
-                  {receipt.input}
+                  “{receipt.input}”
                 </p>
               </section>
 
+              <div className="border-t border-dashed border-gray-300"></div>
+
               <section>
-                <p className="text-sm text-gray-500">02. BE AWARE OF</p>
+                <p className="text-xs font-black tracking-[0.2em] text-[#9b7b63]">02｜辨別到的非理性思維</p>
 
-                <p className="mt-4 text-xs font-bold tracking-[0.2em] text-gray-400">
-                  EMOTION
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {receipt.emotion?.length > 0 ? (
-                    receipt.emotion.map((e, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 rounded-full bg-gray-100 text-sm"
-                      >
-                        {e}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-gray-400">未有情緒標籤</span>
-                  )}
-                </div>
-
-                <p className="mt-6 text-xs font-bold tracking-[0.2em] text-gray-400">
-                  IRRATIONAL THOUGHTS｜只使用標準學術名稱｜點擊查看解釋
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {currentDistortions.length > 0 ? (
-                    currentDistortions.map((d, i) => (
-                      <button
-                        type="button"
-                        key={`${d.name}-${i}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openDistortion(d);
-                        }}
-                        className="cursor-pointer px-4 py-2 rounded-full border border-black/20 bg-white text-sm shadow-sm hover:bg-black hover:text-white active:scale-95 transition"
-                      >
-                        {standardizeDistortionName(d.name)} ⓘ
-                      </button>
-                    ))
-                  ) : (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {currentDistortions.map((d, i) => (
                     <button
                       type="button"
-                      onClick={() =>
-                        openDistortion({
-                          name: "過度概括",
-                          explanation: defaultDistortionInfo["過度概括"]
-                        })
-                      }
-                      className="cursor-pointer px-4 py-2 rounded-full border border-black/20 bg-white text-sm shadow-sm hover:bg-black hover:text-white active:scale-95 transition"
+                      key={`${d.name}-${i}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openDistortion(d);
+                      }}
+                      className="cursor-pointer px-4 py-2 rounded-2xl border border-black/10 bg-[#f5eee5] text-sm shadow-sm hover:bg-black hover:text-white active:scale-95 transition"
                     >
-                      查看思想偏差說明 ⓘ
+                      {standardizeDistortionName(d.name)} ⓘ
                     </button>
-                  )}
+                  ))}
                 </div>
+              </section>
 
-                <p className="mt-5 text-gray-600 leading-relaxed">
+              <section>
+                <p className="text-xs font-black tracking-[0.2em] text-[#9b7b63]">03｜情緒識別 EMOTION</p>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {(receipt.emotion?.length ? receipt.emotion : ["未有情緒標籤"]).map((e, i) => (
+                    <div key={i} className="rounded-2xl bg-white/70 border border-black/10 p-3 text-center text-sm font-bold">
+                      {e}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <p className="text-xs font-black tracking-[0.2em] text-[#9b7b63]">04｜AI 轉念建議</p>
+
+                <p className="mt-4 leading-loose text-gray-700">
                   {receipt.awareness}
                 </p>
+
+                <div className="mt-4 rounded-3xl bg-[#eef3e9] p-5 border border-black/5">
+                  <p className="text-xs font-black tracking-[0.18em] text-[#6c8e56]">REFRAME</p>
+                  <p className="mt-3 leading-loose text-lg">
+                    {receipt.reframe}
+                  </p>
+                </div>
+
+                <div className="mt-4 rounded-3xl bg-[#fff7df] p-5 border border-black/5">
+                  <p className="text-xs font-black tracking-[0.18em] text-[#9a7944]">ACTION</p>
+                  <p className="mt-3 leading-loose text-lg">
+                    {receipt.action}
+                  </p>
+                </div>
               </section>
 
-              <section>
-                <p className="text-sm text-gray-500">03. REFRAME</p>
-
-                <p className="mt-4 leading-loose text-lg">
-                  {receipt.reframe}
+              <div className="border-t border-dashed border-gray-300 pt-5">
+                <div className="h-12 bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
+                <p className="text-center text-xs tracking-[0.22em] text-gray-400 mt-4">
+                  THANK YOU FOR USING THOUGHT REWRITE
                 </p>
-              </section>
-
-              <section>
-                <p className="text-sm text-gray-500">04. ACTION</p>
-
-                <p className="mt-4 leading-loose text-lg">
-                  {receipt.action}
-                </p>
-              </section>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setTab("card")}
-                className="w-full rounded-2xl bg-black text-white py-4 tracking-[0.18em] active:scale-[0.98] transition"
+                className="w-full rounded-3xl bg-black text-white py-4 tracking-[0.18em] font-black active:scale-[0.98] transition"
               >
                 生成轉念小卡 CARD
               </button>
@@ -465,7 +805,7 @@ export default function App() {
       )}
 
       {tab === "card" && receipt && (
-        <div className="max-w-2xl mx-auto pt-6 fade-up">
+        <div className="max-w-2xl mx-auto pt-6 fade-up relative">
           <div className="text-center mb-5">
             <h2 className="text-4xl font-black tracking-wide">轉念小卡</h2>
             <p className="text-sm text-gray-500 mt-2 tracking-[0.2em]">
@@ -473,7 +813,7 @@ export default function App() {
             </p>
           </div>
 
-          <div ref={cardRef} className="bg-[#f5f2ec] p-3 rounded-[2rem]">
+          <div ref={cardRef} className="bg-[#f7efe5] p-3 rounded-[2rem]">
             <div className="mx-auto max-w-xl bg-[#fffdf8] rounded-[2rem] shadow-2xl border border-black/10 overflow-hidden">
               <div className="p-6 text-center border-b border-dashed border-gray-300">
                 <div className="mx-auto w-12 h-7 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs">
