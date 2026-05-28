@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 
 const allowedDistortionNames = [
@@ -188,38 +188,15 @@ export default function App() {
   const [thought, setThought] = useState("");
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState(null);
-  const [history, setHistory] = useState([]);
   const [tab, setTab] = useState("home");
   const [selectedDistortion, setSelectedDistortion] = useState(null);
+  const [favorite, setFavorite] = useState(false);
   const cardRef = useRef(null);
-
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("receipts") || "[]");
-    setHistory(saved);
-  }, []);
 
   const currentDistortions = useMemo(
     () => normalizeDistortions(receipt?.distortion),
     [receipt]
   );
-
-  const updateHistory = (updated) => {
-    setHistory(updated);
-    localStorage.setItem("receipts", JSON.stringify(updated));
-  };
-
-  const saveReceipt = (data) => {
-    const id = data.id || `receipt-${Date.now()}`;
-    const withId = { ...data, id };
-
-    const exists = history.some((item) => item.id === id);
-    const updated = exists
-      ? history.map((item) => (item.id === id ? { ...item, ...withId } : item))
-      : [withId, ...history];
-
-    updateHistory(updated);
-    return withId;
-  };
 
   const generateReceipt = async () => {
     if (!thought.trim()) return;
@@ -247,7 +224,6 @@ export default function App() {
 
       const data = await res.json();
       const parsed = safeJsonParse(data.choices?.[0]?.message?.content || "{}");
-
       const normalizedDistortions = normalizeDistortions(parsed.distortion);
 
       const normalized = {
@@ -260,13 +236,11 @@ export default function App() {
         awareness: parsed.awareness || "你正在嘗試理解一個不容易承受的念頭，這本身已經是一種覺察。",
         reframe: parsed.reframe || "也許這個想法正在反映你的壓力，而不是反映你的全部能力或價值。",
         action: parsed.action || "先停一停，喝一口水，然後寫下現在最需要處理的一小步。",
-        date: new Date().toLocaleString(),
-        favorite: false,
-        cardSaved: false
+        date: new Date().toLocaleString()
       };
 
-      const saved = saveReceipt(normalized);
-      setReceipt(saved);
+      setReceipt(normalized);
+      setFavorite(false);
       setTab("receipt");
     } catch (e) {
       alert("OpenAI API Error，請檢查 API Key 或網絡設定。");
@@ -286,30 +260,15 @@ export default function App() {
 
   const addCurrentToRecord = () => {
     if (!receipt) return;
-    const saved = saveReceipt({
-      ...receipt,
-      distortion: normalizeDistortions(receipt.distortion),
-      cardSaved: true
-    });
-    setReceipt(saved);
+    const saved = JSON.parse(localStorage.getItem("receipts") || "[]");
+    const exists = saved.some((item) => item.id === receipt.id);
+    const updated = exists ? saved : [{ ...receipt, favorite }, ...saved];
+    localStorage.setItem("receipts", JSON.stringify(updated));
     alert("已加入紀錄");
   };
 
   const toggleFavorite = () => {
-    if (!receipt) return;
-
-    const updatedReceipt = {
-      ...receipt,
-      favorite: !receipt.favorite
-    };
-
-    setReceipt(updatedReceipt);
-
-    const updated = history.some((item) => item.id === updatedReceipt.id)
-      ? history.map((item) => item.id === updatedReceipt.id ? updatedReceipt : item)
-      : [updatedReceipt, ...history];
-
-    updateHistory(updated);
+    setFavorite((prev) => !prev);
   };
 
   const makeCardCanvas = async () => {
@@ -362,7 +321,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen p-4 pb-28 bg-[#f5f2ec]">
+    <div className="min-h-screen p-4 pb-32 bg-[#f5f2ec]">
       {tab === "home" && (
         <div className="max-w-xl mx-auto pt-10 fade-up">
           <div className="receipt p-8">
@@ -514,9 +473,9 @@ export default function App() {
             </p>
           </div>
 
-          <div ref={cardRef} className="bg-[#f5f2ec] p-4 rounded-[2rem]">
+          <div ref={cardRef} className="bg-[#f5f2ec] p-3 rounded-[2rem]">
             <div className="mx-auto max-w-xl bg-[#fffdf8] rounded-[2rem] shadow-2xl border border-black/10 overflow-hidden">
-              <div className="p-7 text-center border-b border-dashed border-gray-300">
+              <div className="p-6 text-center border-b border-dashed border-gray-300">
                 <div className="mx-auto w-12 h-7 rounded-lg border border-gray-300 mb-4 flex items-center justify-center text-xs">
                   ◌
                 </div>
@@ -530,46 +489,50 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className="mb-6">
+              <div className="p-4 md:p-6">
+                <div className="mb-5">
                   <span className="px-3 py-1 rounded-full bg-[#eee8dd] text-xs font-bold">
                     原來的想法
                   </span>
-                  <p className="mt-4 text-2xl leading-relaxed">
+                  <p className="mt-4 text-xl md:text-2xl leading-relaxed break-words">
                     “{shorten(receipt.input, 58)}”
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
-                  <div className="rounded-3xl bg-[#f8e9e5] p-5 border border-black/5">
-                    <p className="font-black tracking-[0.18em] text-sm">
+                <p className="mb-3 text-xs text-gray-400 tracking-[0.18em] text-center">
+                  BEFORE → AFTER
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_auto_1fr] md:gap-4 items-stretch">
+                  <div className="rounded-3xl bg-[#f8e9e5] p-3 md:p-5 border border-black/5 min-w-0 overflow-hidden">
+                    <p className="font-black tracking-[0.08em] md:tracking-[0.18em] text-[10px] md:text-sm break-words">
                       轉念前 BEFORE
                     </p>
 
-                    <div className="mt-5 space-y-5 text-sm leading-relaxed">
-                      <div>
+                    <div className="mt-3 md:mt-5 space-y-3 md:space-y-5 text-[11px] md:text-sm leading-relaxed break-words">
+                      <div className="min-w-0">
                         <p className="font-bold">情緒狀態</p>
-                        <p className="text-gray-600 mt-1">
-                          {receipt.emotion?.join("、") || "混亂、壓力"}
+                        <p className="text-gray-600 mt-1 break-words">
+                          {shorten(receipt.emotion?.join("、") || "混亂、壓力", 26)}
                         </p>
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-bold">內在對話</p>
-                        <p className="text-gray-600 mt-1">
-                          {shorten(receipt.awareness, 60)}
+                        <p className="text-gray-600 mt-1 break-words">
+                          {shorten(receipt.awareness, 38)}
                         </p>
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-bold">思維模式</p>
-                        <p className="text-gray-600 mt-1">
-                          {currentDistortions.map(d => d.name).join("、") || "過度概括"}
+                        <p className="text-gray-600 mt-1 break-words">
+                          {shorten(currentDistortions.map(d => d.name).join("、") || "過度概括", 26)}
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-6 text-right text-2xl italic text-gray-400">
+                    <p className="mt-4 md:mt-6 text-right text-lg md:text-2xl italic text-gray-400">
                       before
                     </p>
                   </div>
@@ -580,35 +543,35 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl bg-[#eef3e9] p-5 border border-black/5">
-                    <p className="font-black tracking-[0.18em] text-sm">
+                  <div className="rounded-3xl bg-[#eef3e9] p-3 md:p-5 border border-black/5 min-w-0 overflow-hidden">
+                    <p className="font-black tracking-[0.08em] md:tracking-[0.18em] text-[10px] md:text-sm break-words">
                       轉念後 AFTER
                     </p>
 
-                    <div className="mt-5 space-y-5 text-sm leading-relaxed">
-                      <div>
+                    <div className="mt-3 md:mt-5 space-y-3 md:space-y-5 text-[11px] md:text-sm leading-relaxed break-words">
+                      <div className="min-w-0">
                         <p className="font-bold">情緒狀態</p>
-                        <p className="text-gray-600 mt-1">
-                          較穩定、較清晰、可行動
+                        <p className="text-gray-600 mt-1 break-words">
+                          較穩定、較清晰
                         </p>
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-bold">新的理解</p>
-                        <p className="text-gray-600 mt-1">
-                          {shorten(receipt.reframe, 70)}
+                        <p className="text-gray-600 mt-1 break-words">
+                          {shorten(receipt.reframe, 42)}
                         </p>
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-bold">思維轉化</p>
-                        <p className="text-gray-600 mt-1">
-                          從單一負面解讀，轉向較平衡的理解。
+                        <p className="text-gray-600 mt-1 break-words">
+                          轉向較平衡的理解。
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-6 text-right text-2xl italic text-gray-400">
+                    <p className="mt-4 md:mt-6 text-right text-lg md:text-2xl italic text-gray-400">
                       after
                     </p>
                   </div>
@@ -646,7 +609,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="sticky bottom-24 mt-5 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-black/10 overflow-hidden">
+          <div className="sticky bottom-28 mt-5 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-black/10 overflow-hidden">
             <div className="grid grid-cols-4 divide-x divide-gray-200 text-sm">
               <button onClick={downloadCard} className="py-4 active:bg-gray-100">
                 ↓<br />下載
@@ -655,7 +618,7 @@ export default function App() {
                 ⤴<br />分享
               </button>
               <button onClick={toggleFavorite} className="py-4 active:bg-gray-100">
-                {receipt.favorite ? "★" : "☆"}<br />收藏
+                {favorite ? "★" : "☆"}<br />收藏
               </button>
               <button onClick={addCurrentToRecord} className="py-4 active:bg-gray-100">
                 ▤<br />加入紀錄
