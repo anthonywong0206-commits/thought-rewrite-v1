@@ -186,6 +186,50 @@ function shorten(text, max = 52) {
   return raw.slice(0, max) + "…";
 }
 
+function BarcodeGraphic({ id = "" }) {
+  const cleanId = String(id || Date.now()).replace(/\D/g, "").slice(-10) || "0000000000";
+  const bars = [3, 1, 2, 1, 4, 1, 1, 2, 3, 1, 2, 2, 1, 1, 4, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 4, 1, 2, 1, 3];
+
+  let x = 8;
+
+  return (
+    <div className="w-full">
+      <svg
+        width="100%"
+        height="58"
+        viewBox="0 0 320 58"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="barcode"
+        style={{ display: "block" }}
+      >
+        <rect width="320" height="58" fill="#fffdf8" />
+        {bars.map((w, i) => {
+          const currentX = x;
+          x += w + (i % 3 === 0 ? 3 : 2);
+          return (
+            <rect
+              key={i}
+              x={currentX}
+              y="4"
+              width={w}
+              height={i % 4 === 0 ? 48 : 42}
+              fill="#111"
+            />
+          );
+        })}
+        <rect x="292" y="4" width="3" height="48" fill="#111" />
+        <rect x="300" y="4" width="2" height="42" fill="#111" />
+        <rect x="306" y="4" width="4" height="48" fill="#111" />
+      </svg>
+
+      <p className="text-center text-[14px] tracking-[0.28em] text-black mt-[4px] font-mono">
+        {cleanId}
+      </p>
+    </div>
+  );
+}
+
 function ReceiptPrinter({ stage = "printing" }) {
   const progressText =
     stage === "analyzing" ? "AI 正在分析你的想法…" :
@@ -898,7 +942,10 @@ export default function App() {
               </section>
 
               <div className="border-t border-dashed border-gray-300 pt-5">
-                <div className="h-12 bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
+                <p className="text-center text-[10px] tracking-[0.28em] text-gray-400 mb-2">
+                  BARCODE / RECEIPT ID
+                </p>
+                <BarcodeGraphic id={receipt.id} />
                 <p className="text-center text-xs tracking-[0.22em] text-gray-400 mt-4">
                   THANK YOU FOR USING THOUGHT REWRITE
                 </p>
@@ -1050,15 +1097,7 @@ export default function App() {
                     <p className="text-center text-[9px] tracking-[0.28em] text-gray-400 mb-[8px]">
                       BARCODE / RECEIPT ID
                     </p>
-                    <div
-                      className="w-full h-[52px] opacity-90"
-                      style={{
-                        background: "repeating-linear-gradient(90deg, #111 0px, #111 3px, transparent 3px, transparent 6px, #111 6px, #111 8px, transparent 8px, transparent 14px)"
-                      }}
-                    ></div>
-                    <p className="text-center text-[16px] tracking-[0.28em] text-black mt-[8px]">
-                      {String(receipt.id || Date.now()).replace(/\\D/g, "").slice(-10)}
-                    </p>
+                    <BarcodeGraphic id={receipt.id} />
                     <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[12px]">
                       理解自己，就是改變的開始
                     </p>
