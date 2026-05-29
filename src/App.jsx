@@ -530,6 +530,12 @@ export default function App() {
 
         .receipt-export-paper {
           overflow: visible !important;
+          box-shadow: none !important;
+        }
+
+        .receipt-export-paper::before,
+        .receipt-export-paper::after {
+          display: none !important;
         }
 
         .fade-up {
@@ -1057,6 +1063,8 @@ export default function App() {
                       理解自己，就是改變的開始
                     </p>
                   </div>
+                </div>
+
                 <div className="mt-[16px] text-center">
                   <p className="text-[9px] tracking-[0.22em] text-[#9b7b63] font-black">
                     KEEP THIS RECEIPT FOR YOURSELF
