@@ -402,17 +402,13 @@ export default function App() {
 
     await new Promise((resolve) => setTimeout(resolve, 250));
 
-    const target = receiptStoryRef.current;
-    const width = target.scrollWidth;
-    const height = target.scrollHeight;
-
-    return await html2canvas(target, {
+    return await html2canvas(receiptStoryRef.current, {
       backgroundColor: "#f7efe5",
       scale: 2,
-      width,
-      height,
-      windowWidth: width,
-      windowHeight: height,
+      width: 390,
+      height: 844,
+      windowWidth: 390,
+      windowHeight: 844,
       scrollX: 0,
       scrollY: 0,
       useCORS: true
@@ -910,39 +906,37 @@ export default function App() {
           <div className="text-center mb-5">
             <h2 className="text-4xl font-black tracking-wide">保留收據</h2>
             <p className="text-sm text-gray-500 mt-2 tracking-[0.2em]">
-              先產生完整長收據預覽，再下載或分享
+              先產生預覽，再下載或分享
             </p>
           </div>
 
           <div className="rounded-[2rem] bg-white/80 border border-black/10 shadow-2xl p-4">
             {!receiptPreview ? (
-              <div className="min-h-[520px] rounded-[1.7rem] bg-[#f7efe5] border border-dashed border-[#c8b5a1] flex flex-col items-center justify-center text-center p-8">
+              <div className="aspect-[9/16] rounded-[1.7rem] bg-[#f7efe5] border border-dashed border-[#c8b5a1] flex flex-col items-center justify-center text-center p-8">
                 <div className="printer-wrap scale-[0.68] -my-10"></div>
                 <h3 className="text-2xl font-black mt-2">準備生成收據圖</h3>
                 <p className="text-gray-500 text-sm mt-3 leading-loose">
-                  系統會先生成一張 完整長收據圖片，確認完整後再下載或分享。
+                  系統會先生成一張 IG Story 比例的收據圖片，確認完整後再下載或分享。
                 </p>
               </div>
             ) : (
-              <div className="max-h-[70vh] overflow-auto rounded-[1.7rem] bg-[#f7efe5] border border-black/10">
-                <img
-                  src={receiptPreview}
-                  alt="思維重整收據預覽"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
+              <img
+                src={receiptPreview}
+                alt="思維重整收據預覽"
+                className="w-full aspect-[9/16] object-contain rounded-[1.7rem] bg-[#f7efe5] border border-black/10"
+              />
             )}
           </div>
 
-          <div className="fixed -left-[9999px] top-0 w-[390px] pointer-events-none">
+          <div className="fixed -left-[9999px] top-0 w-[390px] h-[844px] overflow-hidden pointer-events-none">
             <div
               ref={receiptStoryRef}
-              className="w-[390px] bg-[#f7efe5] relative overflow-visible"
+              className="w-[390px] h-[844px] bg-[#f7efe5] overflow-hidden relative"
             >
               <div className="absolute inset-0 soft-grid"></div>
 
-              <div className="relative p-[20px] box-border">
-                <div className="text-center mb-[14px]">
+              <div className="relative h-full p-[20px] flex flex-col box-border">
+                <div className="text-center mb-[14px] shrink-0">
                   <div className="inline-flex items-center gap-2 bg-white/80 border border-black/10 rounded-full px-4 py-2 text-[10px] font-black tracking-[0.18em] text-[#8a6248] shadow-sm">
                     ✦ THOUGHT REWRITE
                   </div>
@@ -953,7 +947,7 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="receipt-paper rounded-[24px] px-[18px] py-[18px] box-border overflow-visible">
+                <div className="receipt-paper rounded-[24px] px-[18px] py-[18px] box-border">
                   <div className="text-center border-b border-dashed border-gray-300 pb-[12px]">
                     <div className="mx-auto mb-[10px] flex justify-center">
                       <img
@@ -975,7 +969,7 @@ export default function App() {
                         01｜INPUT
                       </p>
                       <p className="mt-[6px] text-[17px] leading-[1.55] break-words">
-                        “{shorten(receipt.input, 90)}”
+                        “{shorten(receipt.input, 42)}”
                       </p>
                     </section>
 
@@ -1020,7 +1014,7 @@ export default function App() {
                         REFRAME
                       </p>
                       <p className="mt-[6px] text-[13px] leading-[1.75] break-words">
-                        {shorten(receipt.reframe, 150)}
+                        {shorten(receipt.reframe, 78)}
                       </p>
                     </section>
 
@@ -1029,20 +1023,20 @@ export default function App() {
                         ACTION
                       </p>
                       <p className="mt-[6px] text-[13px] leading-[1.75] break-words">
-                        {shorten(receipt.action, 110)}
+                        {shorten(receipt.action, 58)}
                       </p>
                     </section>
                   </div>
 
-                  <div className="mt-[16px] pt-[14px] border-t border-dashed border-gray-300">
-                    <div className="h-[42px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
+                  <div className="mt-[12px] pt-[10px] border-t border-dashed border-gray-300">
+                    <div className="h-[30px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-80"></div>
                     <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[9px]">
                       理解自己，就是改變的開始
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-[12px] text-center">
+                <div className="mt-[12px] text-center shrink-0">
                   <p className="text-[9px] tracking-[0.22em] text-[#9b7b63] font-black">
                     KEEP THIS RECEIPT FOR YOURSELF
                   </p>
@@ -1058,7 +1052,7 @@ export default function App() {
                 disabled={previewLoading}
                 className="py-4 active:bg-gray-100 disabled:opacity-50"
               >
-                ◎<br />{previewLoading ? "生成中" : "產生長收據"}
+                ◎<br />{previewLoading ? "生成中" : "產生預覽"}
               </button>
               <button onClick={downloadReceiptStory} className="py-4 active:bg-gray-100">
                 ↓<br />下載
