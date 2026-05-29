@@ -530,12 +530,6 @@ export default function App() {
 
         .receipt-export-paper {
           overflow: visible !important;
-          box-shadow: none !important;
-        }
-
-        .receipt-export-paper::before,
-        .receipt-export-paper::after {
-          display: none !important;
         }
 
         .fade-up {
@@ -921,7 +915,7 @@ export default function App() {
           <div className="text-center mb-5">
             <h2 className="text-4xl font-black tracking-wide">保留收據</h2>
             <p className="text-sm text-gray-500 mt-2 tracking-[0.2em]">
-              先產生完整白色收據預覽，再下載或分享
+              先產生完整長收據預覽，再下載或分享
             </p>
           </div>
 
@@ -931,7 +925,7 @@ export default function App() {
                 <div className="printer-wrap scale-[0.68] -my-10"></div>
                 <h3 className="text-2xl font-black mt-2">準備生成收據圖</h3>
                 <p className="text-gray-500 text-sm mt-3 leading-loose">
-                  系統會先生成一張 完整白色收據圖片，確認完整後再下載或分享。
+                  系統會先生成一張 完整長收據圖片，確認完整後再下載或分享。
                 </p>
               </div>
             ) : (
@@ -965,7 +959,7 @@ export default function App() {
                 </div>
 
                 <div ref={receiptBodyRef}
-                  className="receipt-paper receipt-export-paper rounded-[24px] px-[18px] py-[22px] box-border overflow-visible w-full">
+                  className="receipt-paper receipt-export-paper rounded-[24px] px-[20px] py-[24px] box-border overflow-visible w-full">
                   <div className="text-center border-b border-dashed border-gray-300 pb-[12px]">
                     <div className="mx-auto mb-[10px] flex justify-center">
                       <img
@@ -998,11 +992,11 @@ export default function App() {
                         02｜EMOTION
                       </p>
 
-                      <div className="mt-[7px] flex flex-wrap gap-[6px]">
+                      <div className="mt-[7px] flex flex-wrap gap-0">
                         {(receipt.emotion?.length ? receipt.emotion : ["未有情緒標籤"]).slice(0, 4).map((e, i) => (
                           <span
                             key={i}
-                            className="px-[10px] py-[4px] rounded-full bg-[#f5eee5] text-[10px] font-bold border border-black/5"
+                            className="mr-[22px] mb-[6px] text-[16px] leading-[1.6] text-black font-normal"
                           >
                             {e}
                           </span>
@@ -1015,11 +1009,11 @@ export default function App() {
                         03｜THINKING PATTERN
                       </p>
 
-                      <div className="mt-[7px] flex flex-wrap gap-[6px]">
+                      <div className="mt-[7px] flex flex-wrap gap-0">
                         {currentDistortions.slice(0, 3).map((d, i) => (
                           <span
                             key={`${d.name}-${i}`}
-                            className="px-[10px] py-[4px] rounded-full bg-white text-[10px] font-bold border border-black/10"
+                            className="mr-[22px] mb-[6px] text-[16px] leading-[1.6] text-black font-normal"
                           >
                             {standardizeDistortionName(d.name)}
                           </span>
@@ -1047,16 +1041,22 @@ export default function App() {
                   </div>
 
                   <div className="mt-[18px] pt-[14px] border-t border-dashed border-gray-300">
-                    <p className="text-center text-[8px] tracking-[0.28em] text-gray-400 mb-[7px]">
+                    <p className="text-center text-[9px] tracking-[0.28em] text-gray-400 mb-[8px]">
                       BARCODE / RECEIPT ID
                     </p>
-                    <div className="w-full h-[46px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-90"></div>
-                    <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[10px]">
+                    <div
+                      className="w-full h-[52px] opacity-90"
+                      style={{
+                        background: "repeating-linear-gradient(90deg, #111 0px, #111 3px, transparent 3px, transparent 6px, #111 6px, #111 8px, transparent 8px, transparent 14px)"
+                      }}
+                    ></div>
+                    <p className="text-center text-[16px] tracking-[0.28em] text-black mt-[8px]">
+                      {String(receipt.id || Date.now()).replace(/\\D/g, "").slice(-10)}
+                    </p>
+                    <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[12px]">
                       理解自己，就是改變的開始
                     </p>
                   </div>
-                </div>
-
                 <div className="mt-[16px] text-center">
                   <p className="text-[9px] tracking-[0.22em] text-[#9b7b63] font-black">
                     KEEP THIS RECEIPT FOR YOURSELF
