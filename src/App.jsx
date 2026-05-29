@@ -941,7 +941,7 @@ export default function App() {
           <div className="fixed -left-[9999px] top-0 w-[390px] pointer-events-none">
             <div
               ref={receiptStoryRef}
-              className="w-[390px] bg-[#f7efe5] relative overflow-visible"
+              className="w-[390px] bg-[#f7efe5] relative overflow-visible mx-auto"
             >
               <div className="absolute inset-0 soft-grid"></div>
 
@@ -1040,7 +1040,7 @@ export default function App() {
 
                   <div className="mt-[16px] pt-[14px] border-t border-dashed border-gray-300">
                     <p className="text-center text-[8px] tracking-[0.28em] text-gray-400 mb-[6px]">
-                      BARCODE
+                      BARCODE / RECEIPT ID
                     </p>
                     <div className="w-full h-[42px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-85"></div>
                     <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[10px]">
