@@ -252,6 +252,7 @@ export default function App() {
   const [printerStage, setPrinterStage] = useState("idle");
   const cardRef = useRef(null);
   const receiptStoryRef = useRef(null);
+  const receiptBodyRef = useRef(null);
 
   const currentDistortions = useMemo(
     () => normalizeDistortions(receipt?.distortion),
@@ -398,16 +399,16 @@ export default function App() {
   };
 
   const makeReceiptStoryCanvas = async () => {
-    if (!receiptStoryRef.current) return null;
+    const target = receiptBodyRef.current || receiptStoryRef.current;
+    if (!target) return null;
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const target = receiptStoryRef.current;
     const width = target.scrollWidth;
     const height = target.scrollHeight;
 
     return await html2canvas(target, {
-      backgroundColor: "#f7efe5",
+      backgroundColor: "#fffdf8",
       scale: 2,
       width,
       height,
@@ -529,6 +530,12 @@ export default function App() {
 
         .receipt-export-paper {
           overflow: visible !important;
+          box-shadow: none !important;
+        }
+
+        .receipt-export-paper::before,
+        .receipt-export-paper::after {
+          display: none !important;
         }
 
         .fade-up {
@@ -914,7 +921,7 @@ export default function App() {
           <div className="text-center mb-5">
             <h2 className="text-4xl font-black tracking-wide">保留收據</h2>
             <p className="text-sm text-gray-500 mt-2 tracking-[0.2em]">
-              先產生完整長收據預覽，再下載或分享
+              先產生完整白色收據預覽，再下載或分享
             </p>
           </div>
 
@@ -924,7 +931,7 @@ export default function App() {
                 <div className="printer-wrap scale-[0.68] -my-10"></div>
                 <h3 className="text-2xl font-black mt-2">準備生成收據圖</h3>
                 <p className="text-gray-500 text-sm mt-3 leading-loose">
-                  系統會先生成一張 完整長收據圖片，確認完整後再下載或分享。
+                  系統會先生成一張 完整白色收據圖片，確認完整後再下載或分享。
                 </p>
               </div>
             ) : (
@@ -938,14 +945,14 @@ export default function App() {
             )}
           </div>
 
-          <div className="fixed -left-[9999px] top-0 w-[390px] pointer-events-none">
+          <div className="fixed -left-[9999px] top-0 w-[430px] pointer-events-none">
             <div
               ref={receiptStoryRef}
-              className="w-[390px] bg-[#f7efe5] relative overflow-visible mx-auto"
+              className="w-[430px] bg-[#f7efe5] relative overflow-visible p-[20px] box-border"
             >
               <div className="absolute inset-0 soft-grid"></div>
 
-              <div className="relative px-[18px] py-[22px] box-border">
+              <div className="relative box-border">
                 <div className="text-center mb-[14px]">
                   <div className="inline-flex items-center gap-2 bg-white/80 border border-black/10 rounded-full px-4 py-2 text-[10px] font-black tracking-[0.18em] text-[#8a6248] shadow-sm">
                     ✦ THOUGHT REWRITE
@@ -957,7 +964,8 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="receipt-paper receipt-export-paper rounded-[24px] px-[18px] py-[20px] box-border overflow-visible w-full">
+                <div ref={receiptBodyRef}
+                  className="receipt-paper receipt-export-paper rounded-[24px] px-[18px] py-[22px] box-border overflow-visible w-full">
                   <div className="text-center border-b border-dashed border-gray-300 pb-[12px]">
                     <div className="mx-auto mb-[10px] flex justify-center">
                       <img
@@ -1038,11 +1046,11 @@ export default function App() {
                     </section>
                   </div>
 
-                  <div className="mt-[16px] pt-[14px] border-t border-dashed border-gray-300">
-                    <p className="text-center text-[8px] tracking-[0.28em] text-gray-400 mb-[6px]">
+                  <div className="mt-[18px] pt-[14px] border-t border-dashed border-gray-300">
+                    <p className="text-center text-[8px] tracking-[0.28em] text-gray-400 mb-[7px]">
                       BARCODE / RECEIPT ID
                     </p>
-                    <div className="w-full h-[42px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-85"></div>
+                    <div className="w-full h-[46px] bg-[repeating-linear-gradient(90deg,#111_0_3px,transparent_3px_6px,#111_6px_8px,transparent_8px_14px)] opacity-90"></div>
                     <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[10px]">
                       理解自己，就是改變的開始
                     </p>
