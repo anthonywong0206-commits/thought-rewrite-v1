@@ -188,39 +188,56 @@ function shorten(text, max = 52) {
 
 function BarcodeGraphic({ id = "" }) {
   const cleanId = String(id || Date.now()).replace(/\D/g, "").slice(-10) || "0000000000";
-  const bars = [3, 1, 2, 1, 4, 1, 1, 2, 3, 1, 2, 2, 1, 1, 4, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 4, 1, 2, 1, 3];
 
-  let x = 8;
+  const pattern = [
+    2, 1, 1, 3, 2, 1, 4, 1, 1, 2,
+    3, 1, 2, 2, 1, 4, 2, 1, 1, 3,
+    2, 1, 4, 1, 2, 3, 1, 1, 2, 4,
+    1, 2, 3, 1, 2, 1, 4, 2, 1, 3
+  ];
+
+  const quietZone = 10;
+  const maxWidth = 300;
+  const totalUnits = pattern.reduce((sum, width, index) => {
+    const gap = index % 4 === 0 ? 3 : 2;
+    return sum + width + gap;
+  }, 0);
+
+  const unit = (maxWidth - quietZone * 2) / totalUnits;
+  let x = quietZone;
 
   return (
     <div className="w-full">
       <svg
         width="100%"
-        height="58"
-        viewBox="0 0 320 58"
+        height="70"
+        viewBox="0 0 300 70"
+        preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="barcode"
-        style={{ display: "block" }}
+        style={{ display: "block", overflow: "visible" }}
       >
-        <rect width="320" height="58" fill="#fffdf8" />
-        {bars.map((w, i) => {
-          const currentX = x;
-          x += w + (i % 3 === 0 ? 3 : 2);
+        <rect width="300" height="70" fill="#fffdf8" />
+
+        {pattern.map((width, index) => {
+          const barWidth = Math.max(1, width * unit);
+          const barX = x;
+          const barHeight = index % 5 === 0 ? 58 : index % 3 === 0 ? 52 : 46;
+          const gap = (index % 4 === 0 ? 3 : 2) * unit;
+          x += barWidth + gap;
+
           return (
             <rect
-              key={i}
-              x={currentX}
-              y="4"
-              width={w}
-              height={i % 4 === 0 ? 48 : 42}
+              key={index}
+              x={barX}
+              y="5"
+              width={barWidth}
+              height={barHeight}
               fill="#111"
             />
           );
         })}
-        <rect x="292" y="4" width="3" height="48" fill="#111" />
-        <rect x="300" y="4" width="2" height="42" fill="#111" />
-        <rect x="306" y="4" width="4" height="48" fill="#111" />
       </svg>
 
       <p className="text-center text-[14px] tracking-[0.28em] text-black mt-[4px] font-mono">
@@ -945,7 +962,7 @@ export default function App() {
                 <p className="text-center text-[10px] tracking-[0.28em] text-gray-400 mb-2">
                   BARCODE / RECEIPT ID
                 </p>
-                <BarcodeGraphic id={receipt.id} />
+                <div className="w-full overflow-visible"><BarcodeGraphic id={receipt.id} /></div>
                 <p className="text-center text-xs tracking-[0.22em] text-gray-400 mt-4">
                   THANK YOU FOR USING THOUGHT REWRITE
                 </p>
@@ -1097,7 +1114,7 @@ export default function App() {
                     <p className="text-center text-[9px] tracking-[0.28em] text-gray-400 mb-[8px]">
                       BARCODE / RECEIPT ID
                     </p>
-                    <BarcodeGraphic id={receipt.id} />
+                    <div className="w-full overflow-visible"><BarcodeGraphic id={receipt.id} /></div>
                     <p className="text-center text-[9px] tracking-[0.2em] text-gray-400 mt-[12px]">
                       理解自己，就是改變的開始
                     </p>
